@@ -13,7 +13,7 @@
   <ItemGroup>
     <!-- LibreWorlds SDK reference -->
     <!-- Option A: Project reference (recommended if you have source) -->
-    <ProjectReference Include="..\LibreWorlds.Sdk\LibreWorlds.Sdk.Core\LibreWorlds.Sdk.Core.csproj" />
+    <ProjectReference Include="..\..\LibreWorlds.Sdk\LibreWorlds.Sdk.Core\LibreWorlds.Sdk.Core.csproj" />
   </ItemGroup>
 
   <!-- If instead you are consuming a built DLL, comment the ProjectReference
