@@ -1,0 +1,3 @@
+[submodule "src/realmlib-ffi"]
+	path = src/realmlib-ffi
+	url = ./src/realmlib-ffi

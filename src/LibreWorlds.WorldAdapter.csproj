@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- This is glue code, keep it simple -->
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- LibreWorlds SDK reference -->
+    <!-- Option A: Project reference (recommended if you have source) -->
+    <ProjectReference Include="..\LibreWorlds.Sdk\LibreWorlds.Sdk.Core\LibreWorlds.Sdk.Core.csproj" />
+  </ItemGroup>
+
+  <!-- If instead you are consuming a built DLL, comment the ProjectReference
+       above and use this instead:
+
+  <ItemGroup>
+    <Reference Include="LibreWorlds.Sdk.Core">
+      <HintPath>..\libs\LibreWorlds.Sdk.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  -->
+
+</Project>
