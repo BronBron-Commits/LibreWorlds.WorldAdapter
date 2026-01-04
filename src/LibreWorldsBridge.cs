@@ -1,57 +1,49 @@
+﻿using System;
 using System.Numerics;
-using LibreWorlds.Sdk.Core.Api;   // <-- actual SDK surface
+using LibreWorlds.WorldAdapter;
 
-public sealed class LibreWorldsBridge
+namespace LibreWorlds.WorldAdapter
 {
-    private readonly WorldAdapter _adapter;
-    private readonly AssetResolver _assets;
-
-    public LibreWorldsBridge(
-        WorldAdapter adapter,
-        AssetResolver assets)
+    /// <summary>
+    /// Bridges LibreWorlds SDK events into the WorldAdapter.
+    /// This class does NOT own state and does NOT touch the engine directly.
+    /// </summary>
+    public sealed class LibreWorldsBridge
     {
-        _adapter = adapter;
-        _assets = assets;
-    }
+        private readonly WorldAdapter _adapter;
 
-    // Called when YOU decide an object "exists"
-    public void EmitObject(
-        int id,
-        string modelName,
-        float x, float y, float z,
-        float yaw, float pitch, float roll)
-    {
-        var obj = new WorldObject
+        public LibreWorldsBridge(WorldAdapter adapter)
         {
-            Id = id,
-            ModelName = modelName,
-            Position = new Vector3(x, y, z),
-            Rotation = Quaternion.CreateFromYawPitchRoll(
-                yaw, pitch, roll)
-        };
+            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+        }
 
-        var bytes = _assets.GetModelBytes(modelName);
-        _adapter.OnObjectCreate(obj, bytes);
-    }
+        // ---------------- SDK → Adapter ----------------
 
-    public void EmitObjectUpdate(
-        int id,
-        float x, float y, float z,
-        float yaw, float pitch, float roll)
-    {
-        var obj = new WorldObject
+        public void HandleObjectCreate(int id, string modelName)
         {
-            Id = id,
-            Position = new Vector3(x, y, z),
-            Rotation = Quaternion.CreateFromYawPitchRoll(
-                yaw, pitch, roll)
-        };
+            // NOTE:
+            // SDK does not yet provide model bytes or transforms here.
+            // We forward structurally complete data without inventing facts.
 
-        _adapter.OnObjectUpdate(obj);
-    }
+            _adapter.OnObjectCreate(
+                id,
+                modelName,
+                ReadOnlyMemory<byte>.Empty,
+                Vector3.Zero,
+                Quaternion.Identity);
+        }
 
-    public void EmitObjectDelete(int id)
-    {
-        _adapter.OnObjectDelete(id);
+        public void HandleObjectUpdate(int id)
+        {
+            _adapter.OnObjectUpdate(
+                id,
+                Vector3.Zero,
+                Quaternion.Identity);
+        }
+
+        public void HandleObjectDelete(int id)
+        {
+            _adapter.OnObjectDelete(id);
+        }
     }
 }
