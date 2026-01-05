@@ -1,109 +1,74 @@
-using System;
-using System.Numerics;
-using LibreWorlds.WorldQueue;
+﻿using System.Numerics;
 using LibreWorlds.WorldQueue.Commands;
 using LibreWorlds.WorldQueue.Interfaces;
 
-namespace LibreWorlds.WorldAdapter
+namespace LibreWorlds.WorldAdapter;
+
+public sealed class WorldAdapter
 {
-    public sealed class WorldAdapter
+    private long _sequence;
+
+    private readonly IWorldCommandQueue _queue;
+
+    public WorldAdapter(IWorldCommandQueue queue)
     {
-        private readonly IWorldCommandQueue _queue;
+        _queue = queue;
+    }
 
-        public WorldAdapterState CurrentState { get; private set; } =
-            WorldAdapterState.Offline;
+    private long NextSeq() => ++_sequence;
 
-        public event Action<WorldAdapterState>? StateChanged;
+    // -------------------------------
+    // OBJECT CREATE
+    // -------------------------------
+    public void OnObjectCreate(
+        long objectId,
+        string modelName,
+        ReadOnlyMemory<byte> modelBytes,
+        Vector3 position,
+        Quaternion rotation
+    )
+    {
+        var cmd = new AddObjectCommand(
+            NextSeq(),
+            objectId,
+            modelName,
+            modelBytes,
+            position,
+            rotation
+        );
 
-        private long _sequence;
+        _queue.Enqueue(cmd);
+    }
 
-        public WorldAdapter(IWorldCommandQueue queue)
-        {
-            _queue = queue ?? throw new ArgumentNullException(nameof(queue));
-        }
+    // -------------------------------
+    // OBJECT UPDATE
+    // -------------------------------
+    public void OnObjectUpdate(
+        long objectId,
+        Vector3 position,
+        Quaternion rotation
+    )
+    {
+        var cmd = new UpdateObjectTransformCommand(
+            NextSeq(),
+            objectId,
+            position,
+            rotation
+        );
 
-        private void TransitionTo(WorldAdapterState newState)
-        {
-            if (CurrentState == newState)
-                return;
+        _queue.Enqueue(cmd);
+    }
 
-            CurrentState = newState;
-            StateChanged?.Invoke(newState);
-        }
+    // -------------------------------
+    // OBJECT DELETE
+    // -------------------------------
+    public void OnObjectDelete(long objectId)
+    {
+        var cmd = new RemoveObjectCommand(
+            NextSeq(),
+            objectId
+        );
 
-        // ---------------- Lifecycle ----------------
-
-        public void Start()
-        {
-            TransitionTo(WorldAdapterState.Starting);
-            TransitionTo(WorldAdapterState.Connected);
-        }
-
-        public void Authenticate()
-        {
-            TransitionTo(WorldAdapterState.Authenticating);
-            TransitionTo(WorldAdapterState.Authenticated);
-        }
-
-        public void EnterWorld()
-        {
-            TransitionTo(WorldAdapterState.EnteringWorld);
-            TransitionTo(WorldAdapterState.InWorld);
-        }
-
-        public void Stop()
-        {
-            TransitionTo(WorldAdapterState.Stopping);
-            TransitionTo(WorldAdapterState.Offline);
-        }
-
-        // ---------------- World Semantics ----------------
-
-        public void OnObjectCreate(
-            int objectId,
-            string modelName,
-            ReadOnlyMemory<byte> modelBytes,
-            Vector3 position,
-            Quaternion rotation)
-        {
-            _queue.Enqueue(new AddObjectCommand(
-                NextSeq(),
-                objectId,
-                modelName,
-                modelBytes,
-                position,
-                rotation));
-        }
-
-        public void OnObjectUpdate(
-            int objectId,
-            Vector3 position,
-            Quaternion rotation)
-        {
-            _queue.Enqueue(new UpdateObjectTransformCommand(
-                NextSeq(),
-                objectId,
-                position,
-                rotation));
-        }
-
-        public void OnObjectDelete(int objectId)
-        {
-            _queue.Enqueue(new RemoveObjectCommand(
-                NextSeq(),
-                objectId));
-        }
-
-        // ---------------- Drain ----------------
-
-        public void Drain(Action<IWorldCommand> consumer)
-        {
-            while (_queue.TryDequeue(out var cmd))
-            {
-                consumer(cmd);
-            }
-        }
-
-        private long NextSeq() => ++_sequence;
+        _queue.Enqueue(cmd);
     }
 }

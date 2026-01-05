@@ -1,26 +1,22 @@
-using System;
 using System.Numerics;
 
-namespace LibreWorlds.WorldAdapter
+namespace LibreWorlds.WorldAdapter;
+
+public interface IWorldEngine
 {
-    /// <summary>
-    /// Defines the authoritative execution surface for world mutations.
-    /// Implemented by concrete engines (Godot, realmlib, headless, etc).
-    /// </summary>
-    public interface IWorldEngine
-    {
-        void AddObject(
-            int id,
-            string modelName,
-            ReadOnlyMemory<byte> modelBytes,
-            Vector3 position,
-            Quaternion rotation);
+    void AddObject(
+        long objectId,
+        string modelName,
+        ReadOnlyMemory<byte> modelBytes,
+        Vector3 position,
+        Quaternion rotation
+    );
 
-        void UpdateObjectTransform(
-            int id,
-            Vector3 position,
-            Quaternion rotation);
+    void UpdateObjectTransform(
+        long objectId,
+        Vector3 position,
+        Quaternion rotation
+    );
 
-        void RemoveObject(int id);
-    }
+    void RemoveObject(long objectId);
 }
