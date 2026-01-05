@@ -1,20 +1,25 @@
 using System;
 using System.Numerics;
+using LibreWorlds.WorldQueue;
+using LibreWorlds.WorldQueue.Commands;
+using LibreWorlds.WorldQueue.Interfaces;
 
 namespace LibreWorlds.WorldAdapter
 {
     public sealed class WorldAdapter
     {
-        private readonly IWorldEngine _engine;
+        private readonly IWorldCommandQueue _queue;
 
         public WorldAdapterState CurrentState { get; private set; } =
             WorldAdapterState.Offline;
 
         public event Action<WorldAdapterState>? StateChanged;
 
-        public WorldAdapter(IWorldEngine engine)
+        private long _sequence;
+
+        public WorldAdapter(IWorldCommandQueue queue)
         {
-            _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+            _queue = queue ?? throw new ArgumentNullException(nameof(queue));
         }
 
         private void TransitionTo(WorldAdapterState newState)
@@ -55,26 +60,50 @@ namespace LibreWorlds.WorldAdapter
         // ---------------- World Semantics ----------------
 
         public void OnObjectCreate(
-            int id,
+            int objectId,
             string modelName,
             ReadOnlyMemory<byte> modelBytes,
             Vector3 position,
             Quaternion rotation)
         {
-            _engine.AddObject(id, modelName, modelBytes, position, rotation);
+            _queue.Enqueue(new AddObjectCommand(
+                NextSeq(),
+                objectId,
+                modelName,
+                modelBytes,
+                position,
+                rotation));
         }
 
         public void OnObjectUpdate(
-            int id,
+            int objectId,
             Vector3 position,
             Quaternion rotation)
         {
-            _engine.UpdateObjectTransform(id, position, rotation);
+            _queue.Enqueue(new UpdateObjectTransformCommand(
+                NextSeq(),
+                objectId,
+                position,
+                rotation));
         }
 
-        public void OnObjectDelete(int id)
+        public void OnObjectDelete(int objectId)
         {
-            _engine.RemoveObject(id);
+            _queue.Enqueue(new RemoveObjectCommand(
+                NextSeq(),
+                objectId));
         }
+
+        // ---------------- Drain ----------------
+
+        public void Drain(Action<IWorldCommand> consumer)
+        {
+            while (_queue.TryDequeue(out var cmd))
+            {
+                consumer(cmd);
+            }
+        }
+
+        private long NextSeq() => ++_sequence;
     }
 }
